@@ -1,0 +1,194 @@
+{% extends "network/layout.html" %}
+{% load static %}
+{% block body %}
+{% if user.is_authenticated %}
+<form action="" method="POST" style="padding: 20px;" id="newpost" >
+    {{ csrf_input }}
+    <div class="form-group">
+        <label for="exampleFormControlTextarea1">Create New Post</label>
+        <textarea id="text"  class="form-control border border-dark" name="text"  rows="3"></textarea>
+    </div>
+    <input  type="submit" value="POST" class="btn btn-outline-info">
+</form>
+{% endif %}
+{% if msg %}
+<h4 class="text-center text-danger" >You don't Follow Anyone </h4>
+{% endif %}
+ 
+{% if tweets %}
+{% for tweet in tweets %}
+
+<div id="T{{tweet.id}}" class="card border border-dark" style="margin: 20px;" >
+    <a href="{% url 'profileView' uid=tweet.user.id %}"><h5 class="card-header">@{{tweet.user}}</h5></a>
+        
+    <div id="ppp{{tweet.id}}" class="x" >
+        <form id="f{{tweet.id}}" data-id="{{tweet.id}}" class="edited" action="" method="" style="padding: 20px;" >
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="exampleFormControlTextarea1">Edit Post</label>
+                <textarea  class="form-control border border-dark" name="text" value=""  rows="3">{{tweet.text}}</textarea>
+            </div>
+            <input  type="submit" value="Save" class="  btn btn-outline-info">
+        </form>
+    </div>
+
+
+
+    <div id="pp{{tweet.id}}" class="card-body">
+        <p><small class="text-muted">{{tweet.date_created}}</small></p>
+
+        <p class="card-text"> {{tweet.text }}</p>
+        {% if request.user in  tweet.likes.all %}
+            <p class="image" ><img id="l{{tweet.id}}" src="{% static 'network/like.png' %}" data-user="{{request.user.id}}" data-value="like" alt="heart" style="width: 35px;height: 35px; fill: red;"><count id="ll{{tweet.id}}"> {{tweet.likes.all.count}}</count> </p>
+        {% else %}
+            <p class="image" ><img id="l{{tweet.id}}" src="{% static 'network/unlike.png' %}" data-user="{{request.user.id}}" data-value="unlike" alt="heart" style="width: 35px;height: 35px;fill: red;"><count id="ll{{tweet.id}}"> {{tweet.likes.all.count}}</count> </p>
+        {% endif %}
+    </div>
+
+
+    {% if user.id == tweet.user.id %}
+    <div  class="card-body editpost" id="p{{ tweet.id }}" >
+        <button  class="btn btn-outline-success">Edit</button>
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+
+
+{% endfor %}
+
+{% endif %}
+
+{% include "network/pagination.html" %}
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{%  block scripts  %}
+<script type="text/javascript" src="{% static 'network/main.js' %}"></script>
+
+<script type="text/javascript">
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+
+{% for tweet in tweets %}
+
+    document.querySelector(`#ppp{{tweet.id}}`).style.display = "none";
+    if (document.querySelector(`#p{{ tweet.id }}`)){
+
+        document.querySelector(`#p{{ tweet.id }}`).onclick = () =>{
+        document.querySelector(`#ppp{{tweet.id}}`).style.display = "block";
+        document.querySelector(`#p{{tweet.id}}`).style.display = "none";
+        document.querySelector(`#pp{{tweet.id}}`).style.display = "none";
+
+        let ff = document.querySelector(`#f{{tweet.id}}`);
+    ff.addEventListener("submit", (event) =>{
+    event.preventDefault();
+    
+    let text = document.querySelector(`#f{{tweet.id}}`).elements['text'].value;
+    console.log(`sumit {{tweet.id}}  =  ${text}`);
+
+    fetch(`/Edit/{{tweet.id}}`, {
+        method: "PUT",
+        body: JSON.stringify({
+            text: text,
+        })
+        });
+
+    document.querySelector(`#ppp{{tweet.id}}`).style.display = "none";
+    document.querySelector(`#p{{tweet.id}}`).style.display = "block";
+    document.querySelector(`#pp{{tweet.id}}`).style.display = "block";
+
+
+    document.querySelector('.card-text').innerHTML = text;
+
+
+},false);
+
+
+        }
+    }
+
+    l = document.querySelector(`#l{{tweet.id}}`);
+
+    $("#l{{tweet.id}}").click( function(){
+
+        fetch(`/like/{{tweet.id}}`)
+        .then((response) => response.json())
+        .then((b) => {
+            userlist = b.likeduser;
+            userid = Number(l.dataset.user)
+            
+            document.querySelector(`#ll{{tweet.id}}`).innerHTML = `${b.likes}`;
+            
+            console.log(`${l.dataset.user}-${b.likeduser}`);
+            if(  userlist.includes(userid)){
+                console.log("yes");
+                $('#l{{tweet.id}}').attr("src","{% static 'network/like.png'%}");
+                
+            }
+            else {
+                console.log("no");
+                $('#l{{tweet.id}}').attr("src","{% static 'network/unlike.png'%}");
+            }
+            
+            
+
+        })
+
+        
+        
+    });
+    
+
+
+    
+    
+
+
+
+{% endfor %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+});
+
+
+
+
+
+
+
+</script>
+
+
+{% endblock %}
